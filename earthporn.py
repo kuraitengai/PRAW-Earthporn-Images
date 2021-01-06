@@ -10,7 +10,7 @@ import requests
 import re
 import pandas as pd
 
-download_folder = 'C:/Users/rloveda/Pictures/Reddit/'
+download_folder = 'C:/Users/LAPTOP/Pictures/Reddit/'
 
 r = praw.Reddit(client_id='CLIENT_ID',
                 client_secret='CLIENT_SECRET',
