@@ -6,9 +6,10 @@ Created on Thu Jun 20 15:01:33 2019
 """
 
 import praw
+from PIL import Image
+from io import BytesIO
 import requests
-import re
-import pandas as pd
+import os
 
 download_folder = 'C:/Users/LAPTOP/Pictures/Reddit/'
 
@@ -16,59 +17,42 @@ r = praw.Reddit(client_id='CLIENT_ID',
                 client_secret='CLIENT_SECRET',
                 user_agent='USERAGENT')
 
-#print(r.read_only)
+subreddit_name = 'earthporn'
 
-def checkDimensions(dimensions):
-    width = int(dimensions.split('x')[0].strip())
-    height = int(dimensions.split('x')[1].strip())
-    if (width > 2000 and width / height > 1.1 and width / height < 1.7):
-        return True
+if not os.path.exists(download_folder):
+    os.makedirs(download_folder)
 
-def parseAspectRatio(title):
-    # Only match images with large dimensions
-    regex = re.search(r'\d{4}x\d{4}', title)
-    if (regex is not None):
-        dimensions = regex.group(0)
-        if (checkDimensions(dimensions)):
-            return True
-    else:
-        return False
+def get_percentages(ls_ct, non_ls_ct):
+    total_count = ls_ct + non_ls_ct
+    ls_pct = (ls_ct / total_count) * 100
+    non_ls_pct = (non_ls_ct / total_count) * 100
+    return ls_pct, non_ls_pct
 
-def downloadImages(urls):
-    for url in urls:
-        filename = url.split('/')[-1]
-        req = requests.get(url, stream=True)
-        with open(r'C:\Users\LAPTOP\Pictures\Reddit\''+filename, 'wb') as f:
-            for chunk in req.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
-    return
+def get_images(subreddit_name):
+    ls_ct = 0
+    non_ls_ct = 0
+    
+    for submission in r.subreddit(subreddit_name).new(limit=100):
+        if submission.url.endswith(('jpg', 'jpeg', 'png', 'gif')):
+            response = requests.get(submission.url)
+            image = Image.open(BytesIO(response.content))
+            
+            width, height = image.size
+            if (width > height and width > 2000 and width / height > 1.1 and width / height < 1.7):
+                image_path = os.path.join(download_folder,submission.id + '.jpg')
+                with open(image_path, 'wb') as f:
+                    f.write(response.content)
+                    print(submission.id, width, height, '{}x{}'.format(width,height))
+                ls_ct += 1
+            else:
+                print(submission.id, width, height, '{}x{}, Not a landscape image'.format(width,height))
+                non_ls_ct += 1
+        else:
+            print('No matching images')
+    
+    ls_pct, non_ls_pct = get_percentages(ls_ct, non_ls_ct)
+    
+    print('Landscape images:', ls_ct, '({:.2f}%)'.format(ls_pct))
+    print('Non-landscape images:', non_ls_ct, '({:.2f}%)'.format(non_ls_pct))
 
-urls = []
-titles = []
-filenames = []
-
-subreddit = r.subreddit('EarthPorn')
-posts = subreddit.new(limit=100)
-for post in posts:
-    url = (post.url)
-    title = (post.title)
-    filename = url.split('/')[-1]
-    if (parseAspectRatio(title)):
-#        print(title,url)
-        urls.append(url)
-        titles.append(title)
-        filenames.append(filename)
-
-downloadImages(urls)
-
-#print(urls)
-#print(titles)
-#print(filenames)
-
-details = pd.DataFrame({'title': titles,
-                        'filename': filenames,
-                        'url': urls})
-
-print(details.info())
-print(details)
+get_images(subreddit_name)
