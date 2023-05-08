@@ -5,7 +5,7 @@ PRAW, an acronym for "Python Reddit API Wrapper", is a Python package that allow
 
 About
 -----
-This script will look at the Earthport subreddit and look at the last 100 posts and look for landscape oriented images that are at least 2000 pixels wide. This is determined by stripping out the resolution from the post title.
+This script will look at the Earthport subreddit and look at the last 100 posts and look for landscape oriented images that are at least 2000 pixels wide. This is determined by using the PIL library and comparing the image height and width.
 
 There is also a file that will look at the location the images are saved to and delete any image that is older than 30 days. That way there is an always changing selection of backgrounds. I created a scheduled task to get new images one day each week then another task to run the cleanup file five minutes later to delete older images.
 
