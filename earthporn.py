@@ -34,19 +34,23 @@ def get_images(subreddit_name):
     
     for submission in r.subreddit(subreddit_name).new(limit=100):
         if submission.url.endswith(('jpg', 'jpeg', 'png', 'gif')):
-            response = requests.get(submission.url)
-            image = Image.open(BytesIO(response.content))
-            
-            width, height = image.size
-            if (width > height and width > 2000 and width / height > 1.1 and width / height < 1.7):
-                image_path = os.path.join(download_folder,submission.id + '.jpg')
-                with open(image_path, 'wb') as f:
-                    f.write(response.content)
-                    print(submission.id, width, height, '{}x{}'.format(width,height))
-                ls_ct += 1
-            else:
-                print(submission.id, width, height, '{}x{}, Not a landscape image'.format(width,height))
-                non_ls_ct += 1
+            try:
+                response = requests.get(submission.url)
+                image = Image.open(BytesIO(response.content))
+
+                width, height = image.size
+                if (width > height and width > 2000 and width / height > 1.1 and width / height < 1.7):
+                    image_path = os.path.join(download_folder,submission.id + '.jpg')
+                    with open(image_path, 'wb') as f:
+                        f.write(response.content)
+                        print(submission.id, width, height, '{}x{}'.format(width,height))
+                    ls_ct += 1
+                else:
+                    print(submission.id, width, height, '{}x{}, Not a landscape image'.format(width,height))
+                    non_ls_ct += 1
+            except Exception as e:
+                print(f"Error processing submission {submission.id}: {str(e)}")
+                continue # Move to the next iteration if an error occurs
         else:
             print('No matching images')
     
